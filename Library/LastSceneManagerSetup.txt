@@ -1,0 +1,4 @@
+sceneSetups:
+- path: Assets/Scenes/Wapoint Dev.unity
+  isLoaded: 1
+  isActive: 1
