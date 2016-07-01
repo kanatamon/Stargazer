@@ -11,6 +11,26 @@ public class WayPoint : MonoBehaviour {
         Always
     }
     
+    [HideInInspector] [SerializeField] bool isActivatable;
+    
+    [ExposeProperty]
+    public bool IsActivatable{
+        get{ 
+            return isActivatable;
+        }   
+        
+        set{ 
+            if (value == true) {
+                gameObject.layer = LayerMask.NameToLayer ("Selectable Waypoint");
+            }
+            else {
+                gameObject.layer = LayerMask.NameToLayer ("Unselectable Waypoint");
+            }
+            
+            isActivatable = value;
+        }
+    }
+    
     public UpdateType updateType = UpdateType.Once;
     
     public LayerMask groundMask;
@@ -18,25 +38,28 @@ public class WayPoint : MonoBehaviour {
     private Vector3 prevPosition;
     public Vector3 GroundPoint{ get; private set; }
     
-    public LayerMask wayPointMask;
-    public WayPointConnectionRayChecker[] connectionCheckers;
+    public LayerMask neighborWayPointMask;
+//    public WayPointConnectionRayChecker[] connectionCheckers;
+
+    public List<WayPointConnectionRayChecker> connectionCheckers;
     
     SphereCollider sphereCollider;
+    MeshRenderer graphics;
+    
+    public NeighborInfo[] neighborInfo{ get; private set; }
     
     public static Vector3 infinitePoint = new Vector3 (Mathf.Infinity, Mathf.Infinity, Mathf.Infinity);
     
-//    public WayPoint[] neighborWayPoints{ get; private set; }
-    public NeighborInfo[] neighborInfo{ get; private set; }
-    
     void Awake(){
+        graphics = GetComponentInChildren<MeshRenderer> ();
+        
         sphereCollider = GetComponent<SphereCollider> ();
         sphereCollider.isTrigger = true;
         
         GroundPoint = FindGroundPoint ();
-    }
-    
-    void Start(){
         UpdateNeighborWayPoint ();
+        
+        graphics.gameObject.SetActive (isActivatable);
     }
     
     void LateUpdate(){
@@ -49,11 +72,37 @@ public class WayPoint : MonoBehaviour {
         }
     }
     
-    void UpdateNeighborWayPoint(){
+    public void Activate(bool startAnimate = true){
+        if (isActivatable) {
+            gameObject.layer = LayerMask.NameToLayer ("Selectable Waypoint");
+            
+            if (startAnimate) {
+                StartCoroutine (Animate (Color.clear, Color.white));
+            }
+            else {
+                graphics.material.color = Color.white;
+            }
+        }
+    }
+    
+    public void Deactivate(bool startAnimate = true){
+        if (isActivatable) {
+            gameObject.layer = LayerMask.NameToLayer ("Unselectable Waypoint");
+            
+            if (startAnimate) {
+                StartCoroutine (Animate (Color.white, Color.clear));
+            }
+            else {
+                graphics.material.color = Color.clear;
+            }
+        }
+    }
+    
+    public void UpdateNeighborWayPoint(){
         Dictionary<WayPoint, NeighborInfo> neighborDict = new Dictionary<WayPoint, NeighborInfo> ();
 //        List<NeighborInfo> neighborList = new List<NeighborInfo> ();
         
-        for (int i = 0; i < connectionCheckers.Length; i++) {
+        for (int i = 0; i < connectionCheckers.Count; i++) {
             connectionCheckers [i].Update ();
             
             if (connectionCheckers [i].connected) {
@@ -67,12 +116,24 @@ public class WayPoint : MonoBehaviour {
         neighborDict.Values.CopyTo (neighborInfo, 0);
     }
     
+    IEnumerator Animate(Color fromColor, Color toColor){
+        float percent = 0;
+        
+        while (percent <= 1) {
+            percent += Time.deltaTime * 2f;
+            graphics.material.color = Color.Lerp (fromColor, toColor, percent);
+            
+            yield return null;
+        }
+    }
+    
     public static bool Raycast (Ray ray, out WayPoint hittedWayPoint, float rayLength, LayerMask mask){
         RaycastHit hit;
         if (Physics.Raycast (ray, out hit, rayLength, mask, QueryTriggerInteraction.Collide)) {
-            if (hit.collider.GetComponent<WayPoint> () != null) {
+            WayPoint wayPoint = hit.collider.GetComponent<WayPoint> ();
+            if (wayPoint != null && wayPoint.IsInteractable) {
                 hittedWayPoint = hit.collider.GetComponent<WayPoint> ();
-                
+
                 return true;
             }
         }
@@ -90,35 +151,26 @@ public class WayPoint : MonoBehaviour {
         return infinitePoint;
     }
     
+    public bool IsInteractable{
+        get{ 
+            return gameObject.layer == LayerMask.NameToLayer ("Selectable Waypoint");
+        }
+    }
+    
     void OnDrawGizmos(){
         if (sphereCollider == null) {
             sphereCollider = GetComponent<SphereCollider> ();
         }
         
-        // ... Draw Way Point
-        Gizmos.color = (updateType == UpdateType.Always) ? new Color (1, 0, 1, .25f) : new Color (0, 0, 1, .25f); 
-        Gizmos.DrawSphere (transform.position, sphereCollider.radius);
-        
-        // ... Draw Ground Ray
-        Vector3 groundPoint = !Application.isPlaying ? FindGroundPoint () : GroundPoint;
-        if (groundPoint != infinitePoint) {
-            Gizmos.DrawLine (transform.position, groundPoint);
-        }
-        else {
-            Gizmos.color = Color.green;
-            Gizmos.DrawRay (transform.position, transform.up * -groundRayLength);
-        }
-        
         // ... Draw Connection-Checkers
-        for (int i = 0; i < connectionCheckers.Length; i++) {
+        for (int i = 0; i < connectionCheckers.Count; i++) {
             Vector3 origin = connectionCheckers [i].motherWayPoint.transform.position;
-//            Vector3 direction = transform.TransformDirection (Quaternion.Euler (connectionCheckers [i].localEuler) * Vector3.forward);
-            Vector3 direction = connectionCheckers [i].direction;
+            Vector3 direction = connectionCheckers [i].forward;
             
             // ... Draw Connection-Checker's Line
             Gizmos.color = (connectionCheckers [i].connected) ? Color.green : Color.red;
             float rayDst = (connectionCheckers [i].connected) ? connectionCheckers [i].realDistance : connectionCheckers [i].distanceRay;
-            Gizmos.DrawRay (transform.position, direction * connectionCheckers [i].distanceRay);
+            Gizmos.DrawRay (transform.position, direction * rayDst);
             
             // ... Draw Connection-Checker's Direction
             if (!Application.isPlaying) {
@@ -129,6 +181,21 @@ public class WayPoint : MonoBehaviour {
             
             string iconName = (connectionCheckers [i].connected) ? "correct" : "incorrect";
             Gizmos.DrawIcon (transform.position + direction * sphereCollider.radius, iconName);
+        }
+        
+        // ... Draw Way Point
+        Gizmos.color = (updateType == UpdateType.Always) ? new Color (1, 0, 1, .5f) : new Color (0, 0, 1, .5f); 
+        Gizmos.DrawSphere (transform.position, sphereCollider.radius);
+
+        // ... Draw Ground Ray
+        Vector3 groundPoint = !Application.isPlaying ? FindGroundPoint () : GroundPoint;
+        if (groundPoint != infinitePoint) {
+            Gizmos.DrawLine (transform.position, groundPoint);
+            Gizmos.DrawIcon (transform.position, "location", false);
+        }
+        else {
+            Gizmos.color = Color.green;
+            Gizmos.DrawRay (transform.position, transform.up * -groundRayLength);
         }
     }
     
@@ -146,23 +213,22 @@ public class WayPoint : MonoBehaviour {
     [System.Serializable]
     public class WayPointConnectionRayChecker{
         public float distanceRay = 1;
-        public Vector3 localEuler;
+        public Vector3 localFoward;
         
         [HideInInspector]
         public WayPoint motherWayPoint;
         [HideInInspector]
         public WayPoint connectedWayPoint;
-        [HideInInspector]
-        public float realDistance;
+        
+        public float realDistance{ get; private set; }
         
         public void Update(){
             connectedWayPoint = null;
             
             Vector3 origin = motherWayPoint.transform.position;
-//            Vector3 direction = motherWayPoint.transform.TransformDirection (Quaternion.Euler (localEuler) * Vector3.forward);
-            
             RaycastHit hit;
-            if (Physics.Raycast (origin, direction, out hit, distanceRay, motherWayPoint.wayPointMask, QueryTriggerInteraction.Collide)) {
+            
+            if (Physics.Raycast (origin, forward, out hit, distanceRay, motherWayPoint.neighborWayPointMask, QueryTriggerInteraction.Collide)) {
                 if (hit.collider.GetComponent<WayPoint> () != null) {
                     connectedWayPoint = hit.collider.GetComponent<WayPoint> ();
                     realDistance = hit.distance;
@@ -170,9 +236,9 @@ public class WayPoint : MonoBehaviour {
             }
         }
         
-        public Vector3 direction{
+        public Vector3 forward{
             get{ 
-                return motherWayPoint.transform.TransformDirection (Quaternion.Euler (localEuler) * Vector3.forward);
+                return motherWayPoint.transform.TransformDirection (localFoward);
             }
         }
         

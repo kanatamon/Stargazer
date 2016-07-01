@@ -99,7 +99,7 @@ public class Menu : MonoBehaviour {
     public void ShowMenuBar(){
 //        menuButtonUI.SetActive (true);
 //        menuSwitch.enabled = false;
-        
+//        print ("ShowMenu");
         StartCoroutine (AnimateMenuUI (menuBarHidePosition, menuBarShowPosition, menuSwitchHideColor, menuSwitchShowColor, false));
         StartCoroutine (AnimateConstellationsUI (onMenuHidePosition, onMenuShowPosition));
     }

@@ -1,4 +1,4 @@
 sceneSetups:
-- path: Assets/Scenes/Wapoint Dev.unity
+- path: Assets/Scenes/New Game Level/Autumn Island.unity
   isLoaded: 1
   isActive: 1

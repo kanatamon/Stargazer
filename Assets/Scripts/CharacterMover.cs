@@ -14,12 +14,30 @@ public class CharacterMover : MonoBehaviour {
     Dictionary<Collider, WayPoint> wayPointDict = new Dictionary<Collider, WayPoint> ();
     
     CharacterController controller;
+    Character player;
+    
+    Transform prevGroundTransform;
+    Vector3 prevGroundPosition;
+    
+    Vector3 halfBox = (Vector3.one * .5f) + Vector3.up;
     
     void Awake(){
         controller = GetComponent<CharacterController> ();
+        player = GetComponent<Character> ();
     }
    
     void LateUpdate(){
+        RaycastHit hit;
+        if (Physics.Raycast (transform.position + Vector3.up * .5f, Vector3.down, out hit, 10f, groundMask)) {
+            if (hit.collider.transform == prevGroundTransform) {
+                Vector3 motion = hit.collider.transform.position - prevGroundPosition;
+                controller.Move (motion);
+            }
+            
+            prevGroundTransform = hit.transform;
+            prevGroundPosition = hit.transform.position;
+        }
+        
         velocity.y -= gravity * Time.deltaTime;
         controller.Move (velocity);
         ResetVelocity ();
@@ -61,31 +79,60 @@ public class CharacterMover : MonoBehaviour {
 //        return transform.position - transform.up * (transform.localScale.y * controller.height / 2 + controller.skinWidth);
     }
     
-    public bool CheckWayPointNearestFeet(out WayPoint wayPoint){
-        Vector3 feetPosition = CalculateFeetPosition ();
-        Collider[] wayPointsNearMe = Physics.OverlapSphere(feetPosition, .5f, wayPointMask, QueryTriggerInteraction.Collide);
-//        print ("CheckWayPointNodeBelowFeet wayPointsNearMe.");
+//    public bool GetWayPointNearestFeet(out WayPoint wayPoint){
+//        Vector3 feetPosition = CalculateFeetPosition ();
+//        Collider[] wayPointsNearMe = Physics.OverlapSphere (feetPosition, 3f, wayPointMask, QueryTriggerInteraction.Collide);
+////        print ("CheckWayPointNodeBelowFeet wayPointsNearMe.");
+//        if (wayPointsNearMe.Length > 0) {
+//            float minDst = Mathf.Infinity;
+//            int minDstIndex = 0;
+//            
+//            for (int i = 0; i < wayPointsNearMe.Length; i++) {
+//                float dst = Vector3.Distance (feetPosition, wayPointsNearMe [i].transform.position);
+//                if (dst < minDst) {
+//                    minDst = dst;
+//                    minDstIndex = i;
+//                }
+//            }
+//            
+//            if (!wayPointDict.ContainsKey (wayPointsNearMe [minDstIndex])) {
+//                wayPointDict.Add (wayPointsNearMe [minDstIndex], wayPointsNearMe [minDstIndex].GetComponent<WayPoint> ());
+//            }
+//            
+//            wayPoint = wayPointDict [wayPointsNearMe [minDstIndex]];
+////            print (wayPoint.name);
+//            return true;
+//        }
+//        
+//        wayPoint = null;
+//        return false;
+//    }
+    
+    public bool GetWayPointNearestFeet(out WayPoint wayPoint){
+        Vector3 centre = CalculateFeetPosition () + Vector3.up * halfBox.y;
+        Collider[] wayPointsNearMe = Physics.OverlapBox (centre, halfBox, transform.rotation, wayPointMask, QueryTriggerInteraction.Collide);
+        
         if (wayPointsNearMe.Length > 0) {
             float minDst = Mathf.Infinity;
             int minDstIndex = 0;
-            
+
             for (int i = 0; i < wayPointsNearMe.Length; i++) {
-                float dst = Vector3.Distance (feetPosition, wayPointsNearMe [i].transform.position);
+                float dst = Vector3.Distance (centre, wayPointsNearMe [i].transform.position);
                 if (dst < minDst) {
                     minDst = dst;
                     minDstIndex = i;
                 }
             }
-            
+
             if (!wayPointDict.ContainsKey (wayPointsNearMe [minDstIndex])) {
                 wayPointDict.Add (wayPointsNearMe [minDstIndex], wayPointsNearMe [minDstIndex].GetComponent<WayPoint> ());
             }
-            
+
             wayPoint = wayPointDict [wayPointsNearMe [minDstIndex]];
-            print (wayPoint.name);
+            //            print (wayPoint.name);
             return true;
         }
-        
+
         wayPoint = null;
         return false;
     }
@@ -105,7 +152,7 @@ public class CharacterMover : MonoBehaviour {
     }
     
     void OnDrawGizmos(){
-        Gizmos.color = Color.cyan;
-        Gizmos.DrawSphere (CalculateFeetPosition (), .5f);
+        Gizmos.color = new Color (0f,1f,1f,.2f);
+        Gizmos.DrawCube (CalculateFeetPosition () + Vector3.up * halfBox.y, halfBox * 2f);
     }
 }

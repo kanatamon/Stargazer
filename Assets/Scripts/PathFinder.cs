@@ -19,7 +19,7 @@ public class PathFinder : MonoBehaviour {
     
     public bool CheckAndFixPath (Queue<WayPoint> path, out Queue<WayPoint> rePath){
         WayPoint standingOnWayPoint;
-        if (mover.CheckWayPointNearestFeet (out standingOnWayPoint)) {
+        if (mover.GetWayPointNearestFeet (out standingOnWayPoint)) {
             var nodes = FindReachableNodesFrom (standingOnWayPoint);
             CreateGraph (nodes);
             

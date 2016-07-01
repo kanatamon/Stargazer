@@ -2,59 +2,114 @@
 using System.Collections;
 using System.Collections.Generic;
 
-[RequireComponent(typeof(PathFinder), typeof(CharacterMover))]
+[RequireComponent(typeof(PathFinder), typeof(CharacterMover), typeof(PlayerMotor))]
 public class Character : MonoBehaviour {
      
     public WayPoint startWayPoint;    
     public LayerMask blockMask;
-    public LayerMask wayPointMask;
+    public LayerMask selectableWayPointMask;
+    
+    public Transform bodyLocator;
+    public Transform headLocator;
+    public float bodyRotationSpeed = 400f;
+    public float headAngleSmoothTime = .8f;
+    float currentAngleVelocity;
     
     public float speed = 3f;
-
+    
 #if UNITY_EDITOR    
+    Vector3 prevMousePosition;
+    bool prevMouseTouch;
+
     Queue<WayPoint> pathGizmos;
 #endif    
     
     Queue<WayPoint> path;
     WayPoint prevPathTargetNode;
     bool isBetweenPath;
-    bool isMovingOnPath;
+    public bool isMovingOnPath{ get; private set;}
     bool isChangingNewPath;
     
     WayPoint startNode;
-    WayPoint hitNode;
+    WayPoint hittedWayPoint;
     
     CharacterMover mover;
     PathFinder pathFinder;
+    PlayerMotor motor;
+    WayPointFetcher wayPointFetcher;
     
     Animation anim;
+    
+    public event System.Action OnStartMoving;
     
     void Awake(){
         anim = GetComponent<Animation> ();
         
         mover = GetComponent<CharacterMover> ();
         pathFinder = GetComponent<PathFinder> ();
+        motor = GetComponent<PlayerMotor> ();
+        wayPointFetcher = GetComponent<WayPointFetcher> ();
     }
     
     void Start(){
+        foreach (WayPoint wayPoint in FindObjectsOfType<WayPoint>()) {
+            wayPoint.Deactivate (false);
+        }
+        
         mover.MoveFeetDirectlyTo (startWayPoint);
+        wayPointFetcher.ShowActiveWayPoints (false);
     }
     
     void Update(){
+        
+#if UNITY_EDITOR
         if (Input.GetMouseButtonDown (0)) {
             Ray ray = Camera.main.ScreenPointToRay (Input.mousePosition);
             if (!Physics.Raycast (ray, Mathf.Infinity, blockMask)) {
-                if (WayPoint.Raycast (ray, out hitNode, Mathf.Infinity, wayPointMask)) {
-                    SetDestination (hitNode);
+                if (WayPoint.Raycast (ray, out hittedWayPoint, Mathf.Infinity, selectableWayPointMask)) {
+                    SetDestination (hittedWayPoint);
+                    //                    hittedWayPoint.Interact ();
                 }
             }
         }
+        
+        if (Input.GetMouseButton (1) && prevMouseTouch) {
+            Vector3 deltaMove = Input.mousePosition - prevMousePosition;
+//            print (Vector3.Magnitude (deltaMove));
+            motor.Rotation (deltaMove);
+        }
+        
+        prevMousePosition = Input.mousePosition;
+        prevMouseTouch = Input.GetMouseButton (1);
+#elif UNITY_IOS
+        if (Input.touchCount > 1 && Input.GetTouch(1).phase == TouchPhase.Moved) {
+            // Move object across XY plane
+            motor.Rotation (Input.GetTouch(1).deltaPosition);
+        }
+        else if (Input.touchCount == 0){
+            Ray ray = Camera.main.ScreenPointToRay (Input.mousePosition);
+            if (!Physics.Raycast (ray, Mathf.Infinity, blockMask)) {
+                if (WayPoint.Raycast (ray, out hittedWayPoint, Mathf.Infinity, selectableWayPointMask)) {
+                    SetDestination (hittedWayPoint);
+                }
+            }
+        }
+#endif
+//        if(Input.GetTouch(0).position)
+        MoveHeadLocator ();
+    }
+    
+    void MoveHeadLocator(){
+        float currentAngle = headLocator.localEulerAngles.y;
+        currentAngle = Mathf.SmoothDampAngle (currentAngle, bodyLocator.localEulerAngles.y, ref currentAngleVelocity, headAngleSmoothTime);
+
+        headLocator.localEulerAngles = new Vector3 (headLocator.localEulerAngles.x, currentAngle, headLocator.localEulerAngles.z);
     }
     
     void SetDestination(WayPoint destinationNode){
-        print ("SetDestination");
-        if (mover.CheckWayPointNearestFeet (out startNode)) {
-            print ("CheckWayPointNodeBelowFeet Completed");
+//        print ("SetDestination");
+        if (mover.GetWayPointNearestFeet (out startNode)) {
+//            print ("CheckWayPointNodeBelowFeet Completed");
             if (pathFinder.ShortestPath (startNode, destinationNode, out path)) {
                 
 #if UNITY_EDITOR
@@ -74,6 +129,10 @@ public class Character : MonoBehaviour {
             yield return null;
         }
         
+        if (OnStartMoving != null) {
+            OnStartMoving ();
+        }
+        
         StartCoroutine (MoveWithPath (path));
     }
     
@@ -81,6 +140,11 @@ public class Character : MonoBehaviour {
         if (path.Count < 2) {
             yield break;
         }
+        
+//        wayPointFetcher.HideWayPoint ();
+//        motor.ResetRotation ();
+        wayPointFetcher.isUpdate = false;
+        wayPointFetcher.HideWayPoint (true);
         
         isChangingNewPath = false; 
         isMovingOnPath = true;
@@ -107,7 +171,7 @@ public class Character : MonoBehaviour {
             
 //            mover.Move (CalculateMotion (mover.CalculateFeetPosition (), targetPosition, out moveStep));
             mover.Move (CalculateMotion (direction, out moveStep));
-            transform.rotation = Quaternion.RotateTowards (transform.rotation, Quaternion.LookRotation (direction), Time.deltaTime * 800f);
+            bodyLocator.transform.rotation = Quaternion.RotateTowards (bodyLocator.transform.rotation, Quaternion.LookRotation (direction), Time.deltaTime * bodyRotationSpeed);
             
             if (mover.CheckIsFeetBeingNear (targetWayPoint, moveStep * 2, out moreDst)) {
                 if (moreDst * 2 > moveStep) {
@@ -140,6 +204,9 @@ public class Character : MonoBehaviour {
         
         anim.Play ("Wait");
         isMovingOnPath = false;
+        
+        wayPointFetcher.isUpdate = true;
+        wayPointFetcher.ShowActiveWayPoints ();
     }
     
     Vector3 CalculateMotion(Vector3 direction, out float moveStep){
@@ -164,6 +231,7 @@ public class Character : MonoBehaviour {
         return distance / velocity;
     }
     
+#if UNITY_EDITOR
     void OnDrawGizmos(){
         // ... Draw Path
         if (pathGizmos != null && pathGizmos.Count != 0) {
@@ -178,5 +246,6 @@ public class Character : MonoBehaviour {
             Gizmos.DrawIcon (startWayPoint.transform.position, "here", false);
         }
     }
+#endif
     
 }

@@ -58,7 +58,6 @@
      <Compile Include="Assets\Standard Assets\Effects\ImageEffects\Scripts\ColorCorrectionRamp.cs" />
      <Compile Include="Assets\Standard Assets\Effects\ImageEffects\Scripts\ContrastEnhance.cs" />
      <Compile Include="Assets\Standard Assets\Effects\ImageEffects\Scripts\ContrastStretch.cs" />
-     <Compile Include="Assets\Standard Assets\Effects\ImageEffects\Scripts\CreaseShading.cs" />
      <Compile Include="Assets\Standard Assets\Effects\ImageEffects\Scripts\DepthOfField.cs" />
      <Compile Include="Assets\Standard Assets\Effects\ImageEffects\Scripts\DepthOfFieldDeprecated.cs" />
      <Compile Include="Assets\Standard Assets\Effects\ImageEffects\Scripts\EdgeDetection.cs" />
@@ -84,6 +83,14 @@
      <Compile Include="Assets\Standard Assets\Effects\ImageEffects\Scripts\Twirl.cs" />
      <Compile Include="Assets\Standard Assets\Effects\ImageEffects\Scripts\VignetteAndChromaticAberration.cs" />
      <Compile Include="Assets\Standard Assets\Effects\ImageEffects\Scripts\Vortex.cs" />
+     <Compile Include="Assets\Standard Assets\Water\Water\Scripts\Displace.cs" />
+     <Compile Include="Assets\Standard Assets\Water\Water\Scripts\GerstnerDisplace.cs" />
+     <Compile Include="Assets\Standard Assets\Water\Water\Scripts\MeshContainer.cs" />
+     <Compile Include="Assets\Standard Assets\Water\Water\Scripts\PlanarReflection.cs" />
+     <Compile Include="Assets\Standard Assets\Water\Water\Scripts\SpecularLighting.cs" />
+     <Compile Include="Assets\Standard Assets\Water\Water\Scripts\Water.cs" />
+     <Compile Include="Assets\Standard Assets\Water\Water\Scripts\WaterBase.cs" />
+     <Compile Include="Assets\Standard Assets\Water\Water\Scripts\WaterTile.cs" />
      <None Include="Assets\Standard Assets\Effects\GlassRefraction\Shaders\GlassStainedBumpDistort.shader" />
      <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\_BloomAndFlares\BlendOneOne.shader" />
      <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\NoiseEffectShaderRGB.shader" />
@@ -125,6 +132,7 @@
      <None Include="Assets\Standard Assets\Effects\ToonShading\Shaders\ToonLitOutline.shader" />
      <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\Contrast Stretch\Luminance.shader" />
      <None Include="Assets\Standard Assets\Effects\ToonShading\Shaders\ToonLit.shader" />
+     <None Include="Assets\Materials\Constellations Stone\ChangeMaterial.shader" />
      <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\ColorCorrectionSelective.shader" />
      <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\_DepthOfField\Bokeh34.shader" />
      <None Include="Assets\Imported Assets\Fantasy Skybox FREE\Readme\Readme.txt" />
@@ -134,6 +142,7 @@
      <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\_BloomAndFlares\MultiPassHollywoodFlares.shader" />
      <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\BlurEffectConeTaps.shader" />
      <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\CameraMotionBlur.shader" />
+     <None Include="Assets\Standard Assets\Water\Water\Shaders\FXWaterPro.shader" />
      <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\_Antialiasing\DLAA.shader" />
      <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\NoiseAndGrainDX11.shader" />
      <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\_BloomAndFlares\BrightPassFilter2.shader" />

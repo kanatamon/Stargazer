@@ -2,8 +2,8 @@
 using System.Collections;
 using System.Collections.Generic;
 
-public class Constellations : MonoBehaviour {
-    
+public class Constellations : EventGraph {
+        
     public enum ConstellationsState
     {
         Idle,
@@ -12,6 +12,7 @@ public class Constellations : MonoBehaviour {
         Activated
     }
     
+//    public NodeMove<Star> starMover;
     public StarMover starMover;
     public Connection[] connections;
     public float connectionsWidth;
@@ -20,12 +21,11 @@ public class Constellations : MonoBehaviour {
     [Header("Star Materials")]
     public Material awakenStarMaterials;
     public Material unawakenStarMaterials;
-    public Material startStarMaterial;
-//    public Material firstStarMaterial;
-    
+//    public Material startStarMaterial;
+
     [Header("Line Materials")]
-    public Material activatedPathMaterial;
-    public Material deactivatedPathMaterial;
+    public Material activatedConnectionMaterial;
+    public Material deactivatedConnectionMaterial;
     
     public Material visitablePathMaterial;
     public Material unvisitablePathMaterial;
@@ -42,22 +42,20 @@ public class Constellations : MonoBehaviour {
     
     Dictionary<Star, List<Star>> neighborDict = new Dictionary<Star, List<Star>> ();
     Dictionary<Star, Dictionary<Star, Connection>> connectionDict = new Dictionary<Star, Dictionary<Star, Connection>>();
-//    bool isActivated;
+
     Dictionary<Star, MeshRenderer> starRendererDict = new Dictionary<Star, MeshRenderer> ();
     
-    Star firstStar;
+//    Star firstStar;
     Star currentStar;
    
     float threshold = .75f;
     
     public event System.Action<Constellations> OnActivate;
     public event System.Action<Constellations> OnDeactivate;
-//    public event System.Action<int> OnTest;
     
     public bool generateOnAwake = true;
     private bool isAwaken;
     
-//    bool isLocked;
     public bool activated{ get{ return curState == ConstellationsState.Activated; } }
     
     void Awake(){
@@ -99,23 +97,14 @@ public class Constellations : MonoBehaviour {
         children.CopyTo (childrentStars);
     }
     
-    void MarkStarWhereTravelFrom(Star hightligtStar){
-        // ... Mark the first star of the current path
-//        if (firstStar != null) {
-//            if (!starRendererDict.ContainsKey (firstStar)) {
-//                starRendererDict.Add (firstStar, firstStar.GetComponent<MeshRenderer> ());
+//    void MarkStarWhereTravelFrom(Star hightligtStar){
+//        if (hightligtStar != null) {
+//            if (!starRendererDict.ContainsKey (hightligtStar)) {
+//                starRendererDict.Add (hightligtStar, firstStar.GetComponent<MeshRenderer> ());
 //            }
-//            starRendererDict [firstStar].material = firstStarMaterial;
+//            starRendererDict [hightligtStar].material = startStarMaterial;
 //        }
-        
-        // ... Mark the recent star of the current path
-        if (hightligtStar != null) {
-            if (!starRendererDict.ContainsKey (hightligtStar)) {
-                starRendererDict.Add (hightligtStar, firstStar.GetComponent<MeshRenderer> ());
-            }
-            starRendererDict [hightligtStar].material = startStarMaterial;
-        }
-    }
+//    }
     
     void SetChildrentsStarMaterial(Material targetMat){
         for (int i = 0; i < childrentStars.Length; i++) {
@@ -123,27 +112,25 @@ public class Constellations : MonoBehaviour {
                 if (!starRendererDict.ContainsKey (childrentStars [i])) {
                     starRendererDict.Add (childrentStars [i], childrentStars [i].GetComponent<MeshRenderer> ());
                 }
-                
-//                starRendererDict [childrentStars [i]].material = starMaterial;
+
                 starRendererDict [childrentStars [i]].material = targetMat;
             }
         }
         
     }
     
-    public void CancelContact(){
+    public override void CancelContact(){
         if (curState == ConstellationsState.Rest && path.Count == 1 && !travelInfo.isSuccess) {
             Deactivate ();
         }
     }
     
-    public void MakeContact(Star fromStar, Vector3 contractPosition){
-//        print ("MakeContact() from " + fromStar.name + ", state = " + curState.ToString ());
+    public override void MakeContact(EventPoint fromStar, Vector3 contractPosition){
         if (curState == ConstellationsState.Idle) {
-            StartContact (fromStar);
+            StartContact (fromStar as Star);
         }
         
-        if (starMover.IsMover(fromStar)) {
+        if (starMover.IsMover(fromStar as Star)) {
             if (curState == ConstellationsState.Rest) {
                 SetDestination (contractPosition);
             }
@@ -160,12 +147,11 @@ public class Constellations : MonoBehaviour {
     }
     
     void StartContact(Star _firstStar){
-        firstStar = _firstStar;
-        AddNewVisitedPath (firstStar);
+//        firstStar = _firstStar;
+        AddNewVisitedPath (_firstStar);
         
-//        print ("connectorStar is null ? =" + (connectorStar == null));
         starMover.SetActive (true);
-        starMover.SetMoverPosition (firstStar.transform.position, TravelInfo.nothing);
+        starMover.SetMoverPosition (_firstStar.transform.position, TravelInfo.nothing);
         
         SetAllConnectionsLineMaterialInteractiveMode ();
         
@@ -173,9 +159,8 @@ public class Constellations : MonoBehaviour {
     }
     
     void SetDestination(Vector3 contactPosition){   
-//        Star currentStar;// = (prevState == ConstellationsState.Idle) ? firstStar : travelInfo.destination;
         if ((prevState == ConstellationsState.Idle)) {
-            currentStar = firstStar;
+            currentStar = path.Peek ();
         }
         else if (travelInfo.isSuccess) {
             currentStar = travelInfo.destination;
@@ -185,7 +170,7 @@ public class Constellations : MonoBehaviour {
         }
         
         Star destination = SelectDestinationStart (currentStar, contactPosition);
-        TravelInfo trip = new TravelInfo (currentStar, destination);
+        var trip = new TravelInfo (currentStar, destination);
         
         float moveDst = 0f;// = CheckOverlap (currentStar, destination) ? 0f : CalculateMoveDistance (trip, contactPosition);
         
@@ -198,9 +183,7 @@ public class Constellations : MonoBehaviour {
                 if (travelInfo.isSuccess || prevState == ConstellationsState.Idle) {
                     print ("Success");
                     moveDst = CalculateMoveDistance (trip, contactPosition);
-//                    starMover.LineMaterial = visitTime == 0 ? visitablePathMaterial : unvisitablePathMaterial;
                     starMover.SetMaterial (visitTime == 0 ? visitablePathMaterial : unvisitablePathMaterial);
-//                    starMover.LineMaterial = unvisitablePathMaterial;
                 }
                 else {
                     print ("Not Success");
@@ -226,7 +209,6 @@ public class Constellations : MonoBehaviour {
 
                 travelInfo = trip;
                 starMover.SetMoverPosition (trip.MovedPosition (moveDst), trip);
-//                starMover.LineMaterial = visitablePathMaterial;
                 starMover.SetMaterial (unvisitablePathMaterial);
 
                 RemovePreviousPath (visitablePathMaterial);
@@ -244,7 +226,7 @@ public class Constellations : MonoBehaviour {
 
                 travelInfo = trip;
                 starMover.SetMoverPosition (trip.MovedPosition (moveDst), trip);
-//                starMover.LineMaterial = unvisitablePathMaterial;
+
                 starMover.SetMaterial (unvisitablePathMaterial);
                 RemovePreviousPath (visitablePathMaterial);
                 
@@ -255,7 +237,6 @@ public class Constellations : MonoBehaviour {
             }
             else if (!CheckOverlap (currentStar, destination)) {
                 moveDst = CalculateMoveDistance (trip, contactPosition);
-//                starMover.LineMaterial = unvisitablePathMaterial;
                 starMover.SetMaterial (unvisitablePathMaterial);
                 print ("case : !CheckOverlap()");
             }
@@ -270,12 +251,11 @@ public class Constellations : MonoBehaviour {
     }
     
     void MoveConnector(Vector3 contactPosition){
-//        print ("MoveConnector");
         float moveDst = CalculateMoveDistance (travelInfo, contactPosition);
         
         if (moveDst >= travelInfo.distance) {
             travelInfo.Success ();
-//            print ("Add");
+
             AddNewVisitedPath (travelInfo.destination, starMover.LineMaterial);
             ChangeState (ConstellationsState.Rest);
             
@@ -287,8 +267,6 @@ public class Constellations : MonoBehaviour {
             ChangeState (ConstellationsState.Rest);
         }
         
-//        print (CheckAnswer ());
-//        PrintPath ();
         starMover.SetMoverPosition (travelInfo.MovedPosition (moveDst), travelInfo);
     }
     
@@ -331,26 +309,17 @@ public class Constellations : MonoBehaviour {
         
         Star[] pathArray = path.ToArray ();
         if (pathArray.Length >= 2) {
-//            connectionDict [pathArray [0]] [pathArray [1]].lineRenderer.material = unvisitablePathMaterial;
-//            connectionDict [pathArray [0]] [pathArray [1]].lineRenderer.material = starMover.LineMaterial;
             connectionDict [pathArray [0]] [pathArray [1]].lineRenderer.material = targetMat;
             SetChildrentsStarMaterial (awakenStarMaterials);
         }
         
-        MarkStarWhereTravelFrom (nextStar);
+//        MarkStarWhereTravelFrom (nextStar);
     }
     
     void RemovePreviousPath(Material targetMat){
         Star[] pathArray = path.ToArray ();
         
         if (pathArray.Length >= 2) {
-//            connectionDict [pathArray [0]] [pathArray [1]].lineRenderer.material = starMover.LineMaterial;
-//            print ("b4 connection" + connectionDict [pathArray [0]] [pathArray [1]].lineRenderer.material.name);
-//            print ("b4 starMover.GetMaterial ().name = " + starMover.GetMaterial ().name);
-//            connectionDict [pathArray [0]] [pathArray [1]].lineRenderer.material = starMover.GetMaterial ();
-//            print ("RemovePreviousPath");
-//            print ("connection" + connectionDict [pathArray [0]] [pathArray [1]].lineRenderer.material.name);
-//            print ("starMover.GetMaterial ().name = " + starMover.GetMaterial ().name);
             connectionDict [pathArray [0]] [pathArray [1]].lineRenderer.material = targetMat;
             
         }
@@ -360,7 +329,7 @@ public class Constellations : MonoBehaviour {
         Utility.PrintPath (path, "After RemovePreviousPath()");
         
         SetChildrentsStarMaterial (awakenStarMaterials);
-        MarkStarWhereTravelFrom (path.Peek ());
+//        MarkStarWhereTravelFrom (path.Peek ());
     }
     
     bool CheckIsPreviousPath(Star currentStar){
@@ -429,18 +398,11 @@ public class Constellations : MonoBehaviour {
     }
     
     public void Activate(){
-//        isLocked = true;
-//        for (int i = 0; i < connections.Length; i++) {
-//            connections [i].lineRenderer.material = activatedPathMaterial;
-//        }
-        SetAllConnectionsLineMaterial (activatedPathMaterial);
+        SetAllConnectionsLineMaterial (activatedConnectionMaterial);
     
         starMover.SetActive (false);
         ChangeState (ConstellationsState.Activated);
-//        for (int i = 0; i < childrentStars.Length; i++) {
-//            MarkStarWhereTravelFrom (childrentStars [i]);
-//        }
-
+        
         SetChildrentsStarMaterial (awakenStarMaterials);
         
         if (OnActivate != null) {
@@ -449,15 +411,14 @@ public class Constellations : MonoBehaviour {
     }
 
     public void Deactivate(){ 
-//        isLocked = false;
-        firstStar = null;
+//        firstStar = null;
         
         ChangeState (ConstellationsState.Idle);
         
         path.Clear ();
         starMover.SetActive (false);
         
-        SetAllConnectionsLineMaterial (deactivatedPathMaterial);
+        SetAllConnectionsLineMaterial (deactivatedConnectionMaterial);
         SetChildrentsStarMaterial (awakenStarMaterials);
         
         if (OnDeactivate != null) {
@@ -498,14 +459,29 @@ public class Constellations : MonoBehaviour {
                 continue;
             }
             
-            GameObject connection = new GameObject ("Connection");
+//            GameObject connection = new GameObject ("Connection");
+//            LineRenderer line = connection.AddComponent<LineRenderer> ();
+//            line.material = connections [i].typeOfLine == TypeOfLine.Double ? doubleLinePathMaerial : visitablePathMaterial;
+//            line.SetWidth (connectionsWidth, connectionsWidth);
+//            line.SetVertexCount (2);
+//            line.SetPosition (0, connections [i].a.transform.position);
+//            line.SetPosition (1, connections [i].b.transform.position);
+//            
+            
+            GameObject connection = new GameObject ("Line GameObject");
+            connection.transform.parent = connectionsHolder;
+            connection.transform.localRotation = Quaternion.identity;
+            connection.transform.localScale = Vector3.one;
+            connection.transform.localPosition = Vector3.zero;
+
             LineRenderer line = connection.AddComponent<LineRenderer> ();
-            line.material = connections [i].typeOfLine == TypeOfLine.Double ? doubleLinePathMaerial : visitablePathMaterial;
+            line.useWorldSpace = false;
+            line.material = deactivatedConnectionMaterial;
             line.SetWidth (connectionsWidth, connectionsWidth);
             line.SetVertexCount (2);
-            line.SetPosition (0, connections [i].a.transform.position);
-            line.SetPosition (1, connections [i].b.transform.position);
-            
+            line.SetPosition (0, line.transform.InverseTransformPoint(connections [i].a.transform.position));
+            line.SetPosition (1, line.transform.InverseTransformPoint(connections [i].b.transform.position));
+
             connections [i].lineRenderer = line;
             
             // ... Set-Up Neighbor Dictionary
@@ -542,7 +518,7 @@ public class Constellations : MonoBehaviour {
             if (connections [i].a == null || connections [i].b == null) {
                 continue;
             }
-            Gizmos.color = connections [i].typeOfLine == TypeOfLine.Single ? new Color (0, 0, 1, .2f) : new Color (1, 0, 9, .2f);
+            Gizmos.color = connections [i].typeOfLine == TypeOfLine.Single ? new Color (0, 0, 1, .2f) : new Color (1, 0, 1, .2f);
             Gizmos.DrawLine (connections[i].a.transform.position, connections[i].b.transform.position);
         }
     }
@@ -566,17 +542,17 @@ public class Constellations : MonoBehaviour {
     
     [System.Serializable]
     public class StarMover{
-        public Star starMover;
+//        public Star starMover;
+        public Star mover;
         public LineRenderer line;
-        public Transform constellationsTransform;
+//        public Transform constellationsTransform;
         
         private TravelInfo tripInfo = TravelInfo.nothing;
         
         public void SetMoverPosition(Vector3 position, TravelInfo _tripInfo){
-            starMover.transform.position = position;
+            mover.transform.position = position;
             tripInfo = _tripInfo;
-//            if(tripInfo != TravelInfo.nothing)
-//                print ("tripInfo = " + tripInfo.start.name + " -> " + tripInfo.destination.name);
+
             Update ();
         }
         
@@ -599,28 +575,45 @@ public class Constellations : MonoBehaviour {
         }
         
         public void SetActive(bool enable){
-            starMover.gameObject.SetActive (enable);
+            mover.gameObject.SetActive (enable);
         }
         
         public bool IsMover(Star target){
-            return target == starMover;
+            return target == mover;
         }
         
         void Update(){
+//            Vector3[] vertise = new Vector3[2];
+//            
+//            if (tripInfo != TravelInfo.nothing) {
+//                Vector3 startToEye = (Camera.main.transform.position - tripInfo.startPosition).normalized;
+//                Vector3 moverToEye = (Camera.main.transform.position - mover.transform.position).normalized;
+//                
+//                vertise [0] = tripInfo.startPosition + startToEye * .25f;
+//                vertise [1] = mover.transform.position + moverToEye * .25f;
+//            }
+//            else {
+//                vertise [0] = mover.transform.position;
+//                vertise [1] = mover.transform.position;
+//            }
+//            
+//            line.SetVertexCount (2);
+//            line.SetPositions (vertise);  
+            line.useWorldSpace = false;
             Vector3[] vertise = new Vector3[2];
-            
+
             if (tripInfo != TravelInfo.nothing) {
                 Vector3 startToEye = (Camera.main.transform.position - tripInfo.startPosition).normalized;
-                Vector3 moverToEye = (Camera.main.transform.position - starMover.transform.position).normalized;
+                Vector3 moverToEye = (Camera.main.transform.position - mover.transform.position).normalized;
                 
-                vertise [0] = tripInfo.startPosition + startToEye * .25f;
-                vertise [1] = starMover.transform.position + moverToEye * .25f;
+                vertise [0] = line.transform.InverseTransformPoint (tripInfo.startPosition + startToEye * .25f);
+                vertise [1] = line.transform.InverseTransformPoint (mover.transform.position + moverToEye * .25f);//Vector3.zero + moverToEye * .25f;//line.transform.InverseTransformPoint (mover.transform.position);
             }
             else {
-                vertise [0] = starMover.transform.position;
-                vertise [1] = starMover.transform.position;
+                vertise [0] = mover.transform.position;
+                vertise [1] = mover.transform.position;
             }
-            
+
             line.SetVertexCount (2);
             line.SetPositions (vertise);
         }
@@ -656,7 +649,6 @@ public class Constellations : MonoBehaviour {
         }
         
         public Vector3 MovedPosition(float moveDst){
-//            moveDst = (moveDst < 0) ? 0 : moveDst;
             float dst = Mathf.Clamp (moveDst, 0, distance);
             return startPosition + direction * dst;
         }
@@ -677,5 +669,4 @@ public class Constellations : MonoBehaviour {
             return a.start != b.start || a.destination != b.destination;
         }
     }
-  
 }

@@ -13,6 +13,7 @@ public class WheelSwitchController : MonoBehaviour {
     }
     
     void Update(){
+        #if UNITY_EDITOR
         if (Input.GetMouseButton (0)) {
             if (Raycast (out contactInfo)) {
                 contactInfo.MakeContact ();
@@ -29,6 +30,25 @@ public class WheelSwitchController : MonoBehaviour {
                 prevContactInfo = ContactInfo.nothig;
             } 
         }
+        #elif UNITY_IOS
+        if (Input.touchCount == 1) {
+            if (Raycast (out contactInfo)) {
+                contactInfo.MakeContact ();
+                prevContactInfo = contactInfo;
+            }
+            else if (prevContactInfo != ContactInfo.nothig) {
+                prevContactInfo.CancelContact ();
+                prevContactInfo = ContactInfo.nothig;
+            }
+        }
+        else {
+            if (prevContactInfo != ContactInfo.nothig) {
+                prevContactInfo.CancelContact ();
+                prevContactInfo = ContactInfo.nothig;
+            } 
+        }
+        #endif
+        
     }
     
     bool Raycast(out ContactInfo info){

@@ -1,29 +1,26 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-[RequireComponent(typeof(SphereCollider))]
-public class Star : MonoBehaviour {
+public class Star : EventPoint {
     
     public GameObject effect;
     
-    [HideInInspector]
-    public SphereCollider collider;
-    
     public Constellations constellations{ get; private set; }
-    
-    void Awake(){
-        constellations = GetComponentInParent <Constellations> ();
-        collider = GetComponent<SphereCollider> ();
+//    
+    public override void Awake (){
+        base.Awake ();
+        
+        constellations = GetComponentInParent<Constellations> ();
         
         constellations.OnActivate += OnConstellationsActivate;
         constellations.OnDeactivate += OnConstellationsDeactivate;
     }
     
-    public void CancelContactConstellations(){
+    public override void CancelContactConstellations(){
         constellations.CancelContact ();
     }
-    
-    public void ContactConstellations(Vector3 position){
+
+    public override void ContactConstellations(Vector3 position){
         constellations.MakeContact (this, position);
     }
     
@@ -43,10 +40,10 @@ public class Star : MonoBehaviour {
         collider.enabled = true;
     }
     
-    void OnDrawGizmos(){
-        SphereCollider triggerCollider = GetComponent<SphereCollider> ();
-
-        Gizmos.color = new Color (0, 0, 1, .2f);
-        Gizmos.DrawSphere (transform.position, triggerCollider.radius / 2);
+    public override Vector3 constellationsForward {
+        get {
+            return constellations.transform.forward;
+        }
     }
+    
 }

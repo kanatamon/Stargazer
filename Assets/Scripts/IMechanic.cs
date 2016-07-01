@@ -5,5 +5,5 @@ public interface IMechanic {
     
     void MovePercentage (float value);
     
-    WayPointNode[] GetWayPointNodes ();
+//    WayPointNode[] GetWayPointNodes ();
 }

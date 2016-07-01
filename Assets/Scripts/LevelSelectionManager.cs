@@ -55,10 +55,10 @@ public class LevelSelectionManager : MonoBehaviour {
                         }
                     }
                 
-                    if (levelDict.ContainsKey (hit.collider) && visitableLevels.Contains(levelDict[hit.collider])) {
+                    if (levelDict.ContainsKey (hit.collider ) && visitableLevels.Contains(levelDict[hit.collider])) {
                         if (prevLevel == levelDict [hit.collider]) {
                             print ("Load Level : " + levelDict [hit.collider].name);
-                            GoToLevel (levelDict [hit.collider].name);
+                            LoadScene (levelDict [hit.collider].name);
                         }
                     
                         if (prevLevel != null) {
@@ -84,7 +84,7 @@ public class LevelSelectionManager : MonoBehaviour {
         AudioManager.instance.PlayMusic (bgm);
     }
     
-    void GoToLevel(string sceneName){
+    void LoadScene(string sceneName){
         levelSelected = true;
         PlayerPrefs.SetString ("Late Visited Level", sceneName);
         

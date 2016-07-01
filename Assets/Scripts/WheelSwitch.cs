@@ -3,8 +3,6 @@ using System.Collections;
 
 public class WheelSwitch : MonoBehaviour {
     
-//    public Mechanic controlledMechanic;
-    public Mechanic[] controlledMechanics;
     public LayerMask stopperMask;
     
     [Range(1,18)]
@@ -15,7 +13,6 @@ public class WheelSwitch : MonoBehaviour {
     public float activeColliderRaidus = 2.5f;
     private  SphereCollider controllerCollider;
     
-    
     private float minExceedAngle = 1f;
     
     private float value;
@@ -23,10 +20,12 @@ public class WheelSwitch : MonoBehaviour {
     private bool interacted;
     
     public bool isAlwaysActive;
-    public MeshRenderer controllerRenderer;
-    public Material switchActivatedMaterials;
-    public Material switchDeactivatedMaterials;
+//    public MeshRenderer controllerRenderer;
+//    public Material switchActivatedMaterials;
+//    public Material switchDeactivatedMaterials;
     private bool isActive;
+    
+    public event System.Action<float> OnValueChange;
 
     void Awake(){
         controllerCollider = GetComponentInChildren<SphereCollider> ();    
@@ -42,7 +41,7 @@ public class WheelSwitch : MonoBehaviour {
     void Update(){
         isActive = isAlwaysActive || !CheckIsStopperOnControlledMechanic ();
         
-        controllerRenderer.material = isActive ? switchActivatedMaterials : switchDeactivatedMaterials;
+//        controllerRenderer.material = isActive ? switchActivatedMaterials : switchDeactivatedMaterials;
             
         if (!interacted) {
             float exceed = CalculateMovedExceed (totalMovedAngle, 0, 360);
@@ -72,8 +71,9 @@ public class WheelSwitch : MonoBehaviour {
     }
     
     void MovePercentage(){
-        for (int i = 0; i < controlledMechanics.Length; i++) {
-            controlledMechanics [i].MovePercentage (value);
+        if (OnValueChange != null) {
+            float clampedValue = Mathf.Clamp01 (value);
+            OnValueChange (clampedValue);
         }
     }
     
@@ -116,21 +116,21 @@ public class WheelSwitch : MonoBehaviour {
 //        }
         
         if (Mathf.FloorToInt (totalMovedAngle) == 0 || Mathf.FloorToInt (totalMovedAngle) == 90 || Mathf.FloorToInt (totalMovedAngle) == 180) {
-            AudioManager.instance.PlayeSound ("Wheel Move", transform.position);
+//            AudioManager.instance.PlayeSound ("Wheel Move", transform.position);
         }
 //        print ("totalMovedAngle = " + totalMovedAngle + " , value = " + value);
         transform.Rotate (Vector3.forward, moveAmount);
     }
     
     bool CheckIsStopperOnControlledMechanic(){
-        for (int i = 0; i < controlledMechanics.Length; i++) {
-            WayPointNode[] nodes = controlledMechanics [i].GetWayPointNodes ();
-            for (int n = 0; n < nodes.Length; n++) {
-                if (Physics.OverlapSphere (nodes[n].CalculateCorePosition(), .4f, stopperMask).Length > 0) {
-                    return true;
-                }
-            }
-        }
+//        for (int i = 0; i < controlledMechanics.Length; i++) {
+//            WayPointNode[] nodes = controlledMechanics [i].GetWayPointNodes ();
+//            for (int n = 0; n < nodes.Length; n++) {
+//                if (Physics.OverlapSphere (nodes[n].CalculateCorePosition(), .4f, stopperMask).Length > 0) {
+//                    return true;
+//                }
+//            }
+//        }
         
         return false;
     }
@@ -166,11 +166,11 @@ public class WheelSwitch : MonoBehaviour {
         return closestAngle;
     }
     
-    void OnDrawGizmos(){
-        Gizmos.color = Color.green;
-        for (int i = 0; i < controlledMechanics.Length; i++) {
-            Gizmos.DrawLine (transform.position, controlledMechanics [i].transform.position);
-        }
-    }
+//    void OnDrawGizmos(){
+//        Gizmos.color = Color.green;
+//        for (int i = 0; i < controlledMechanics.Length; i++) {
+//            Gizmos.DrawLine (transform.position, controlledMechanics [i].transform.position);
+//        }
+//    }
     
 }

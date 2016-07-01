@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 public static class Utility {
 
-    public static Vector3 CalculateDirection(Star a, Star b){
+    public static Vector3 CalculateDirection(EventPoint a, EventPoint b){
         return (b.transform.position - a.transform.position).normalized;
     }
 
@@ -27,6 +27,24 @@ public static class Utility {
             debugMes += pathArray [0];
         }
         
+        Debug.Log (debugMes);
+    }
+    
+    public static void PrintPath(Stack<Pointer> path, string message){
+        string debugMes = "[" + message + "] - Path : ";
+
+        Pointer[] pathArray = path.ToArray ();
+
+        if (pathArray.Length > 0) {
+            if (pathArray.Length > 2) {
+                for (int i = pathArray.Length - 1; i > 0; i--) {
+                    debugMes += pathArray [i].name + " -> ";
+                }
+            }
+
+            debugMes += pathArray [0];
+        }
+
         Debug.Log (debugMes);
     }
 

@@ -45,18 +45,28 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+     <Compile Include="Assets\Arkham Interactive\Toony\Skies\Scripts\Levelloader.cs" />
+     <Compile Include="Assets\Arkham Interactive\Toony\Skies\Scripts\MouseLook.cs" />
      <Compile Include="Assets\Imported Assets\Cha_Data\Script\ScreenShot.cs" />
      <Compile Include="Assets\Imported Assets\Fantasy Skybox FREE\Scripts\FSPlayer.cs" />
+     <Compile Include="Assets\Scripts\AltarController.cs" />
      <Compile Include="Assets\Scripts\AudioManager.cs" />
-     <Compile Include="Assets\Scripts\BridgeMechanic.cs" />
+     <Compile Include="Assets\Scripts\AutumnTree.cs" />
      <Compile Include="Assets\Scripts\CameraFollow3D.cs" />
      <Compile Include="Assets\Scripts\Character.cs" />
      <Compile Include="Assets\Scripts\CharacterMover.cs" />
      <Compile Include="Assets\Scripts\Constellations.cs" />
      <Compile Include="Assets\Scripts\ConstellationsActivator.cs" />
-     <Compile Include="Assets\Scripts\ConstellationsUIManager.cs" />
+     <Compile Include="Assets\Scripts\ConstellationsNameDisplay.cs" />
+     <Compile Include="Assets\Scripts\ConstellationsSwitch.cs" />
+     <Compile Include="Assets\Scripts\EventGraph.cs" />
+     <Compile Include="Assets\Scripts\EventPoint.cs" />
+     <Compile Include="Assets\Scripts\ExposePropertyAttribute.cs" />
+     <Compile Include="Assets\Scripts\FadeFloor.cs" />
      <Compile Include="Assets\Scripts\FloatingAnimation.cs" />
+     <Compile Include="Assets\Scripts\FlyController.cs" />
      <Compile Include="Assets\Scripts\GameLevelManager.cs" />
+     <Compile Include="Assets\Scripts\IContactable.cs" />
      <Compile Include="Assets\Scripts\IMechanic.cs" />
      <Compile Include="Assets\Scripts\IntroLevelManager.cs" />
      <Compile Include="Assets\Scripts\Level.cs" />
@@ -65,14 +75,18 @@
      <Compile Include="Assets\Scripts\Mechanic.cs" />
      <Compile Include="Assets\Scripts\Menu.cs" />
      <Compile Include="Assets\Scripts\PathFinder.cs" />
+     <Compile Include="Assets\Scripts\PlayerMotor.cs" />
+     <Compile Include="Assets\Scripts\Pointer.cs" />
+     <Compile Include="Assets\Scripts\PopUpController.cs" />
      <Compile Include="Assets\Scripts\SoundLibrary.cs" />
      <Compile Include="Assets\Scripts\Star.cs" />
      <Compile Include="Assets\Scripts\StarObserver.cs" />
-     <Compile Include="Assets\Scripts\TerraceMechanic.cs" />
+     <Compile Include="Assets\Scripts\StoneMoverController.cs" />
+     <Compile Include="Assets\Scripts\StoneRollerController.cs" />
+     <Compile Include="Assets\Scripts\UpDownWheelControllee.cs" />
      <Compile Include="Assets\Scripts\Utility.cs" />
      <Compile Include="Assets\Scripts\WayPoint.cs" />
-     <Compile Include="Assets\Scripts\WayPointHolder.cs" />
-     <Compile Include="Assets\Scripts\WayPointNode.cs" />
+     <Compile Include="Assets\Scripts\WayPointFetcher.cs" />
      <Compile Include="Assets\Scripts\WheelSwitch.cs" />
      <Compile Include="Assets\Scripts\WheelSwitchController.cs" />
      <None Include="Assets\Standard Assets\Effects\GlassRefraction\Shaders\GlassStainedBumpDistort.shader" />
@@ -116,6 +130,7 @@
      <None Include="Assets\Standard Assets\Effects\ToonShading\Shaders\ToonLitOutline.shader" />
      <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\Contrast Stretch\Luminance.shader" />
      <None Include="Assets\Standard Assets\Effects\ToonShading\Shaders\ToonLit.shader" />
+     <None Include="Assets\Materials\Constellations Stone\ChangeMaterial.shader" />
      <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\ColorCorrectionSelective.shader" />
      <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\_DepthOfField\Bokeh34.shader" />
      <None Include="Assets\Imported Assets\Fantasy Skybox FREE\Readme\Readme.txt" />
@@ -125,6 +140,7 @@
      <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\_BloomAndFlares\MultiPassHollywoodFlares.shader" />
      <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\BlurEffectConeTaps.shader" />
      <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\CameraMotionBlur.shader" />
+     <None Include="Assets\Standard Assets\Water\Water\Shaders\FXWaterPro.shader" />
      <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\_Antialiasing\DLAA.shader" />
      <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\NoiseAndGrainDX11.shader" />
      <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\_BloomAndFlares\BrightPassFilter2.shader" />
@@ -154,9 +170,6 @@
      <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\_Antialiasing\FXAAPreset2.shader" />
      <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\_BloomAndFlares\BlurAndFlares.shader" />
      <None Include="Assets\Standard Assets\Effects\ImageEffects\Shaders\_BloomAndFlares\BlendForBloom.shader" />
- <Reference Include="Assembly-UnityScript-firstpass">
- <HintPath>/Users/kantaponsritiyot/Documents/Unity Project/Stargazer/Library/ScriptAssemblies/Assembly-UnityScript-firstpass.dll</HintPath>
- </Reference>
  <Reference Include="UnityEngine.UI">
  <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>
  </Reference>
@@ -167,6 +180,8 @@
   <ItemGroup>
     <ProjectReference Include="Assembly-CSharp-firstpass.csproj">
       <Project>{C23B3B96-F2E9-F81A-727D-ED3117D947E8}</Project>      <Name>Assembly-CSharp-firstpass</Name>    </ProjectReference>
+    <ProjectReference Include="Assembly-UnityScript-firstpass.unityproj">
+      <Project>{DB472FA4-58A8-28C7-3DD7-80B7DEEFEE14}</Project>      <Name>Assembly-UnityScript-firstpass</Name>    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

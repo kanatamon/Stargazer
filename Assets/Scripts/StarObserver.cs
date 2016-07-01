@@ -6,69 +6,83 @@ public class StarObserver : MonoBehaviour {
 
     public LayerMask starMask;
     
-    Star rayedStar;
-    Star prevRayedStar;
+    EventPoint rayedNode;
+    EventPoint prevRayedNode;
     
-    Dictionary<Collider, Star> starDict = new Dictionary<Collider, Star>();
+    Dictionary<Collider, EventPoint> nodeDict = new Dictionary<Collider, EventPoint>();
     
     void Update(){
+       #if UNITY_EDITOR
         if (Input.GetMouseButton (0)) {
-            if (FindAStarByRaycast (out rayedStar)) {
-                ContactConstellationsFrom (rayedStar);
-                
-                prevRayedStar = rayedStar;
+            if (FindAStarByRaycast (out rayedNode)) {
+                ContactConstellationsFrom (rayedNode);
+
+                prevRayedNode = rayedNode;
             }
-            else if (prevRayedStar != null) {
-                prevRayedStar.CancelContactConstellations ();
-                prevRayedStar = null;
+            else if (prevRayedNode != null) {
+                prevRayedNode.CancelContactConstellations ();
+                prevRayedNode = null;
             }
         }
         else {
-            if (prevRayedStar != null) {
-                prevRayedStar.CancelContactConstellations ();
+            if (prevRayedNode != null) {
+                prevRayedNode.CancelContactConstellations ();
             }
 
-            prevRayedStar = null;        
+            prevRayedNode = null;        
         }
+        #elif UNITY_IOS
+        if (Input.touchCount == 1) {
+            if (Input.GetMouseButton (0)) {
+                if (FindAStarByRaycast (out rayedNode)) {
+                ContactConstellationsFrom (rayedNode);
+    
+                prevRayedNode = rayedNode;
+                }
+                else if (prevRayedNode != null) {
+                    prevRayedNode.CancelContactConstellations ();
+                    prevRayedNode = null;
+                }
+            }
+            else {
+                if (prevRayedNode != null) {
+                    prevRayedNode.CancelContactConstellations ();
+                }
+    
+                prevRayedNode = null;        
+            }
+        }
+        #endif
 
     }
     
-//    bool CheckIsBeingOnSameConstellations(Star fromStar, Star toStar){
-//        return fromStar.constellations == toStar.constellations;
-//    }
-    
-    void ContactConstellationsFrom(Star fromStar){
+    void ContactConstellationsFrom(EventPoint fromNode){
         Ray ray = Camera.main.ScreenPointToRay (Input.mousePosition);
-//        Plane plane = new Plane (Vector3.forward, fromStar.transform.position);
-//        print (fromStar.transform.position.ToString ());
-//        print ("fromStar == null" + (fromStar.Mother == null));
-        Plane plane = new Plane (fromStar.constellations.transform.forward, fromStar.transform.position);
+
+        Plane plane = new Plane (fromNode.constellationsForward, fromNode.transform.position);
         
         float rayDistance;
         plane.Raycast (ray, out rayDistance);
-//        Vector3 onPlanePosition = ray.origin + ray.direction * rayDistance;  
-        fromStar.ContactConstellations (ray.GetPoint (rayDistance));
+        fromNode.ContactConstellations (ray.GetPoint (rayDistance));
     }
     
     
-    bool FindAStarByRaycast(out Star foundStar){
+    bool FindAStarByRaycast(out EventPoint foundNode){
         RaycastHit hit;
 
         if (Physics.Raycast (Camera.main.ScreenPointToRay (Input.mousePosition), out hit, Mathf.Infinity, starMask)) {
-            if (hit.collider.GetComponent<Star> () != null) {
-                if (!starDict.ContainsKey (hit.collider)) {
-                    Star newStar = hit.collider.GetComponent<Star> ();
-                    starDict.Add (hit.collider, newStar);
+//            print ("Hit " + hit.collider.name);
+            if (hit.collider.GetComponent<EventPoint> () != null) {
+                if (!nodeDict.ContainsKey (hit.collider)) {
+                    var newStar = hit.collider.GetComponent<EventPoint> ();
+                    nodeDict.Add (hit.collider, newStar);
                 }
-                foundStar = starDict [hit.collider];
+                foundNode = nodeDict [hit.collider];
                 return true;
             }
         }
 
-//        Ray ray = Camera.main.ScreenPointToRay (Input.mousePosition);
-//        float rayLength = hit.collider != null ? hit.distance : Mathf.Infinity;
-//        Debug.DrawRay (ray.origin, ray.direction * rayLength, hit.collider != null ? Color.red : Color.green, 1);
-        foundStar = null;
+        foundNode = null;
         return false;
     }
  

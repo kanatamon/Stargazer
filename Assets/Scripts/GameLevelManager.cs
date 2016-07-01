@@ -6,26 +6,28 @@ using System.Collections.Generic;
 
 public class GameLevelManager : MonoBehaviour {
 
-    public AudioClip bgm;
-    public AudioClip finishMusic;
+//    public AdvancedFlyController cameraFlyController;
+    public MonoBehaviour[] toDisableComponentOnFinal;
     
-    public Text constellationsNameTag;
-    public float showNameDuration;
+    public AudioClip bgm;
+    public AudioClip stageFinishedBgm;
+    
+    public Image tapUI;
+    public float delayToShowTap = 3f;
     
     public ConstellationsInfo[] constellationsInfo;
-    public Transform endPoint;
-    public LayerMask playerMask;
     
-    [Header("Camera Position & Euler")]
-    public CameraFollow3D cameraFollower;
-    public float duration;
-    public Vector3 camEndStagePosition;
-    public Vector3 camEndStageEuler;
+    [Header("Camera")]
+    public Transform cameraTransfrom;
+    public Vector3 locaFirstPosition;
+    public float cameraMoveUpDuration;
+    public Transform finalTransforomation;
+    public float cameraMoveDuration;
     
     bool isAllConstellationsActivated;
-    bool isFinishCalled;
-    
     bool isLoading;
+    
+//    bool isLevelCompleted;
     
     Dictionary<Constellations, ConstellationsInfo> dict = new Dictionary<Constellations, ConstellationsInfo> ();
     
@@ -36,28 +38,30 @@ public class GameLevelManager : MonoBehaviour {
             dict.Add (constellationsInfo [i].constellations, constellationsInfo [i]);
             
             constellationsInfo [i].constellations.OnActivate += OnConstellationsActivated;
-            constellationsInfo [i].constellations.OnDeactivate += OnConstellationsDeactivated;
         }
         
+        tapUI.gameObject.SetActive (false);
     }
     
     void Start(){
         isLoading = true;
         for (int i = 0; i < constellationsInfo.Length; i++) {
-            if (PlayerPrefs.GetString (constellationsInfo[i].constellations.name, "Deactivated") == "Activated") {
+            if (PlayerPrefs.GetString (constellationsInfo [i].constellations.name, "Deactivated") == "Activated") {
                 constellationsInfo [i].constellations.Activate ();
+            }
+            else {
+                constellationsInfo [i].icon.color = constellationsInfo [i].iconDeactivatedColor;
             }
         }
         isLoading = false;
         
         InvokeRepeating ("PlayMusic", 0f, bgm.length - bgm.length * .1f);
-        constellationsNameTag.gameObject.SetActive (false);
     }
     
     void Update(){
-        if (!isFinishCalled && isAllConstellationsActivated) {
-            if (Physics.OverlapSphere (endPoint.position, .4f, playerMask).Length > 0) {
-                FinishStage ();
+        if (tapUI.gameObject.activeInHierarchy) {
+            if (Input.GetMouseButton (0)) {
+                SceneManager.LoadScene ("Level Selection");
             }
         }
     }
@@ -67,19 +71,21 @@ public class GameLevelManager : MonoBehaviour {
     }
     
     void FinishStage(){
-        isFinishCalled = true;
-        
-        cameraFollower.enabled = false;
-        StartCoroutine (AnimateEndScene (camEndStagePosition, camEndStageEuler));
-        
-        for (int i = 0; i < constellationsInfo.Length; i++) {
-            constellationsInfo [i].endPointAnimation.ActivateFloating ();
-        }
-        
+        // ... Save Finish
         PlayerPrefs.SetString (SceneManager.GetActiveScene ().name, "Finished");
         
-        AudioManager.instance.PlayMusic (finishMusic);
-//        PlayerPrefs.SetString ("Late Visited Level", SceneManager.GetActiveScene ().name);
+        for (int i = 0; i < toDisableComponentOnFinal.Length; i++) {
+            toDisableComponentOnFinal [i].enabled = false;
+        }
+        
+        StartCoroutine (MoveCameraFinal ());
+        
+        // ... Let Constellations Fly
+        for (int i = 0; i < constellationsInfo.Length; i++) {
+            constellationsInfo [i].flyController.Fly ();
+        }
+        
+        AudioManager.instance.PlayMusic (stageFinishedBgm);
     }
     
     bool IsAllConstellationsActivated(){
@@ -93,77 +99,75 @@ public class GameLevelManager : MonoBehaviour {
     }
     
     void OnConstellationsActivated(Constellations constellations){
-        isAllConstellationsActivated = IsAllConstellationsActivated ();
-        PlayerPrefs.SetString (constellations.name, "Activated");
-        
-        ConstellationsInfo info = dict [constellations];
-//        info.image.sprite = info.activatedSprite;
-//        info.endPointStarEffect.SetActive (true);
-        info.endPointAnimation.ActivateEffect ();
-        
-        if (isLoading) {
-            info.image.color = info.activatedColor;
-        }
-        else {
-            StartCoroutine (ConstellationsIcon (info.image, info.activatedColor));
-            StartCoroutine (AnimateConstellationsNameTag (constellations.name, constellations.transform));
-            AudioManager.instance.PlayeSound2D ("Complete Constellations");
-        }
-    }
-    
-    void OnConstellationsDeactivated(Constellations constellations){
+        // ... Save Constellations Activation
+        PlayerPrefs.SetString (constellations.name, "Activated");        
         ConstellationsInfo info = dict [constellations];
 
-//        info.image.sprite = info.deactivatedSprite;
-//        StartCoroutine (ConstellationsIcon (info.image, info.deactivatedColor));
-//        info.endPointStarEffect.SetActive (false);
-        info.endPointAnimation.Deactivate ();
-        info.image.color = info.deactivatedColor;
-    }
-    
-    IEnumerator AnimateEndScene(Vector3 targetPosition, Vector3 targetEuler){
-        Transform cam = cameraFollower.transform;
-        Quaternion fromRotation = cam.rotation;
-        Vector3 fromPosition = cam.position;
-        
-        float percent = 0;
-        while (percent <= 1) {
-            percent += Time.deltaTime / duration;
-            float interpolated = (-Mathf.Pow (percent * .5f, 2) + percent * .5f) * 4;
-            cam.rotation = Quaternion.Lerp (fromRotation, Quaternion.Euler (targetEuler), percent);
-            cam.position = Vector3.Lerp (fromPosition, targetPosition, percent);
-            yield return null;
+        // ... Animate Icon
+        if (isLoading) {
+            info.icon.color = info.iconActivatedColor;
+        }
+        else {
+            StartCoroutine (AnimateConstellationsIcon (info.icon, info.iconActivatedColor));
+            AudioManager.instance.PlayeSound2D ("Complete Constellations");
         }
         
-        yield return new WaitForSeconds (2f);
-        SceneManager.LoadScene ("Level Selection");
-    }
-    
-    IEnumerator AnimateConstellationsNameTag(string constellationsName, Transform constellationsT){
-        constellationsNameTag.gameObject.SetActive (true);
-        constellationsNameTag.text = constellationsName;
-        float percent = 0;
-        
-        while (percent <= 1) {
-            percent += Time.deltaTime / showNameDuration;
-            float interpolation = (-Mathf.Pow (percent, 2) + percent) * 4;
-            constellationsNameTag.color = Color.Lerp (Color.clear, Color.yellow, interpolation);
-            
-//            constellationsNameTag.transform.localPosition = Camera.main.WorldToScreenPoint (constellationsT.transform.position);
-            
-            yield return null;
+        if (IsAllConstellationsActivated ()) {
+            if (!isLoading) {
+                FinishStage ();
+            }
         }
-        
-        constellationsNameTag.gameObject.SetActive (false);
     }
     
-    IEnumerator ConstellationsIcon(Image image, Color targetColor){
+    IEnumerator AnimateConstellationsIcon(Image image, Color targetColor){
         Color originColor = image.color;
         float percent = 0;
         
         while (percent <= 1) {
+            percent += Time.deltaTime / 6f;
             image.color = Color.Lerp (originColor, targetColor, percent);
+            yield return null;
+        }
+    }
+    
+    IEnumerator MoveCameraFinal(){
+        cameraTransfrom.parent = null;
+        Vector3 worldFirstPosition = locaFirstPosition + cameraTransfrom.transform.position;
+        
+        for (int i = 0; i < 2; i++) {
+            Vector3 fromPosition = cameraTransfrom.position;
+            Vector3 toPosition = i == 0 ? worldFirstPosition : finalTransforomation.position;
+            
+            Quaternion fromRotation = cameraTransfrom.rotation;
+            Quaternion toRotation = i == 0 ? cameraTransfrom.rotation : Quaternion.LookRotation (finalTransforomation.forward);
+            
+            float percent = 0;
+            float speed = 1 / (i == 0 ? cameraMoveUpDuration : cameraMoveDuration);
+
+            while (percent < 1) {
+                percent += Time.deltaTime * speed;
+                float interpolate = Mathf.Pow (percent, 3) / (Mathf.Pow (percent, 3) + Mathf.Pow (1 - percent, 3));
+
+                cameraTransfrom.position = Vector3.Lerp (fromPosition, toPosition, interpolate);
+                cameraTransfrom.rotation = Quaternion.Lerp (fromRotation, toRotation, interpolate);
+
+                yield return null;
+            }
+        }
+        
+        yield return new WaitForSeconds (delayToShowTap);
+        
+        StartCoroutine (FadeInTapUI ());
+//        isLevelCompleted = true;
+    }
+    
+    IEnumerator FadeInTapUI(){
+        tapUI.gameObject.SetActive (true);
+        float percent = 0;
+
+        while (percent < 1) {
             percent += Time.deltaTime / 2f;
+            tapUI.color = Color.Lerp (new Color (1f, 1f, 1f, 0f), Color.white, percent);
             yield return null;
         }
     }
@@ -171,11 +175,9 @@ public class GameLevelManager : MonoBehaviour {
     [System.Serializable]
     public struct ConstellationsInfo{
         public Constellations constellations;
-        public Image image;
-//        public Sprite activatedSprite;
-//        public Sprite deactivatedSprite;
-        public Color activatedColor;
-        public Color deactivatedColor;
-        public FloatingAnimation endPointAnimation;
+        public FlyController flyController;
+        public Image icon;
+        public Color iconActivatedColor;
+        public Color iconDeactivatedColor;
     }
 }

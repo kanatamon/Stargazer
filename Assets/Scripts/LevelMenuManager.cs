@@ -99,7 +99,7 @@ public class LevelMenuManager : MonoBehaviour {
     
     public void NewGame(){
         PlayerPrefs.DeleteAll ();
-        SceneManager.LoadScene ("Level - Intro");
+        SceneManager.LoadScene ("Land's End");
     }
     
 }
